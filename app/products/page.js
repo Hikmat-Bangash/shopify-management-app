@@ -7,8 +7,6 @@ import useAuthStore from '../../store/authStore';
 
 
 export default function DashboardPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +21,7 @@ const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
     if (shop && token) {
-      fetch(`/api/products?shop=${shop}&token=${token}`)
+      fetch(`/api/products`)
         .then(res => res.json())
         .then(data => {
           setProducts(data.products || []);
@@ -33,7 +31,7 @@ const token = useAuthStore((state) => state.token);
     }
   }, [shop, token]);
 
-  if (loading) return <div className="text-center mt-10">Loading products...</div>;
+  if (loading) return <div className="text-center flex justify-center items-center mt-10 text-blue-400">Loading...</div>;
 
   return (
     <div className="p-6  mx-auto w-full ">
