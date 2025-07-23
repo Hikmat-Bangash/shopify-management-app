@@ -3,9 +3,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import useAuthStore from '../store/authStore';
 
 export default function HomePage() {
   const router = useRouter();
+    const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
     const shop = document.cookie.split('; ').find(row => row.startsWith('shop='))?.split('=')[1];
@@ -14,7 +16,10 @@ export default function HomePage() {
     if (!shop || !token) {
       router.replace('/login');
     }
-  }, [router]);
+    if (shop && token) {
+      setAuth(shop, token);
+    }
+  }, [router, setAuth]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-green-100 px-4">

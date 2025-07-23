@@ -6,7 +6,12 @@ export async function GET(req) {
   const shop = req.nextUrl.searchParams.get('shop');
   const apiKey = process.env.SHOPIFY_API_KEY;
   const apiSecret = process.env.SHOPIFY_API_SECRET;
-  const SHOPIFY_REDIRECT_URI = process.env.SHOPIFY_REDIRECT_URI;
+  const ROOT_PATH = process.env.ROOT_PATH;
+
+ // Add this check!
+  if (!shop || !code) {
+    return new NextResponse('Missing shop or code parameter', { status: 400 });
+  }
 
   const response = await fetch(
     `https://${shop}/admin/oauth/access_token`,
@@ -26,8 +31,8 @@ export async function GET(req) {
   const data = await response.json();
   const accessToken = data.access_token;
 
+  const res = NextResponse.redirect(ROOT_PATH);
   // Set cookies for shop and token
-  const res = NextResponse.redirect(SHOPIFY_REDIRECT_URI);
   res.cookies.set('shop', shop, { path: '/', httpOnly: false });
   res.cookies.set('token', accessToken, { path: '/', httpOnly: false });
   return res;

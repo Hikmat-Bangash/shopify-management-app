@@ -21,7 +21,7 @@ const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
     if (shop && token) {
-      fetch(`/api/products`)
+      fetch(`/api/products?shop=${shop}&token=${token}`)
         .then(res => res.json())
         .then(data => {
           setProducts(data.products || []);

@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [shop, setShop] = useState('');
+  const [shop, setShop] = useState('1cb12f-54.myshopify.com');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

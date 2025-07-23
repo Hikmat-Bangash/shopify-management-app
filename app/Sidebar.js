@@ -19,6 +19,7 @@ export default function Sidebar({ open, setOpen }) {
 
   if (!shop || !token) return null;
 
+  
   const navItems = [
     { name: 'Home', href: '/', icon: <FaHome /> },
     { name: 'Products', href: '/products', icon: <FaBoxOpen /> },
