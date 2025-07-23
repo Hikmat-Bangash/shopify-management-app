@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FaHome, FaBoxOpen, FaCog, FaSignOutAlt, FaTimes } from 'react-icons/fa';
 import useAuthStore from '../store/authStore';
-import { useState } from 'react';
 
 export default function Sidebar({ open, setOpen }) {
   const pathname = usePathname();
