@@ -6,6 +6,7 @@ export async function GET(req) {
   const shop = req.nextUrl.searchParams.get('shop');
   const apiKey = process.env.SHOPIFY_API_KEY;
   const apiSecret = process.env.SHOPIFY_API_SECRET;
+  const SHOPIFY_REDIRECT_URI = process.env.SHOPIFY_REDIRECT_URI;
 
   const response = await fetch(
     `https://${shop}/admin/oauth/access_token`,
@@ -26,7 +27,7 @@ export async function GET(req) {
   const accessToken = data.access_token;
 
   // Set cookies for shop and token
-  const res = NextResponse.redirect(`http://localhost:3000/`);
+  const res = NextResponse.redirect(SHOPIFY_REDIRECT_URI);
   res.cookies.set('shop', shop, { path: '/', httpOnly: false });
   res.cookies.set('token', accessToken, { path: '/', httpOnly: false });
   return res;
