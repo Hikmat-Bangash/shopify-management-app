@@ -1,36 +1,219 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Seller Management App
 
-## Getting Started
+A Next.js application for managing Shopify seller settings with MongoDB integration.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Shopify OAuth authentication
+- Settings management with layer-based collections
+- MongoDB database integration
+- Public API endpoints for external access
+
+## Public API Documentation
+
+### Base URL
+```
+https://your-vercel-app.vercel.app/api/public
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Authentication (Optional)
+Set the `X-API-Key` header for API key authentication:
+```javascript
+headers: {
+  'Content-Type': 'application/json',
+  'X-API-Key': 'your-api-key'
+}
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Settings API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### Get Settings
+```http
+GET /api/public/settings?shop={shop}
+```
 
-## Learn More
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "shop": "your-shop.myshopify.com",
+    "topValue": "product",
+    "xAxis": "layer1",
+    "yAxis": "layer2",
+    "xAxisCollections": [...],
+    "yAxisCollections": [...],
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Settings retrieved successfully"
+}
+```
 
-To learn more about Next.js, take a look at the following resources:
+#### Save Settings
+```http
+POST /api/public/settings
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Request Body:**
+```json
+{
+  "shop": "your-shop.myshopify.com",
+  "topValue": "product",
+  "xAxis": "layer1",
+  "yAxis": "layer2",
+  "xAxisCollections": [...],
+  "yAxisCollections": [...]
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "shop": "your-shop.myshopify.com",
+    "message": "Settings saved successfully",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Settings saved successfully"
+}
+```
 
-## Deploy on Vercel
+### Store API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+#### Get Store
+```http
+GET /api/public/store?shop={shop}
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "shop": "your-shop.myshopify.com",
+    "storeId": "123456789",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Store found"
+}
+```
+
+#### Save Store
+```http
+POST /api/public/store
+```
+
+**Request Body:**
+```json
+{
+  "shop": "your-shop.myshopify.com",
+  "token": "shopify-access-token",
+  "storeId": "123456789"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "shop": "your-shop.myshopify.com",
+    "message": "Store saved successfully",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Store saved successfully"
+}
+```
+
+### Error Responses
+
+All endpoints return consistent error responses:
+
+```json
+{
+  "success": false,
+  "error": "Error type",
+  "message": "Human readable message",
+  "details": ["Validation errors"] // Optional
+}
+```
+
+### Usage Examples
+
+#### JavaScript/Node.js
+```javascript
+// Get settings
+const response = await fetch('https://your-vercel-app.vercel.app/api/public/settings?shop=your-shop.myshopify.com', {
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key' // Optional
+  }
+});
+
+const data = await response.json();
+console.log(data);
+
+// Save settings
+const saveResponse = await fetch('https://your-vercel-app.vercel.app/api/public/settings', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key' // Optional
+  },
+  body: JSON.stringify({
+    shop: 'your-shop.myshopify.com',
+    topValue: 'product',
+    xAxis: 'layer1',
+    yAxis: 'layer2',
+    xAxisCollections: [...],
+    yAxisCollections: [...]
+  })
+});
+
+const saveData = await saveResponse.json();
+console.log(saveData);
+```
+
+#### cURL
+```bash
+# Get settings
+curl -X GET "https://your-vercel-app.vercel.app/api/public/settings?shop=your-shop.myshopify.com" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key"
+
+# Save settings
+curl -X POST "https://your-vercel-app.vercel.app/api/public/settings" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "shop": "your-shop.myshopify.com",
+    "topValue": "product",
+    "xAxis": "layer1",
+    "yAxis": "layer2"
+  }'
+```
+
+## Environment Variables
+
+Set these in your Vercel dashboard:
+
+- `PUBLIC_API_KEY` (optional) - API key for authentication
+- MongoDB connection string
+
+## CORS Configuration
+
+The API endpoints are configured to allow cross-origin requests from any domain. CORS headers are automatically set for all `/api/public/*` routes.
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Deployment
+
+The app is configured for deployment on Vercel with automatic CORS handling and environment variable support.

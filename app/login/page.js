@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-10">
-      <h1 className="text-3xl mb-4 font-bold">Login with Shopify</h1>
+      <h1 className="text-xl mb-4 ">please enter your shopify store domain</h1>
       <input
         type="text"
         placeholder="your-store.myshopify.com"
@@ -41,7 +41,7 @@ export default function LoginPage() {
       {error && <div className="text-red-600 mb-2">{error}</div>}
       <button
         onClick={handleLogin}
-        className={`bg-black text-white px-6 py-2 rounded ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`bg-black cursor-pointer hover:bg-gray-700 text-white px-6 py-2 rounded ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
         disabled={loading}
       >
         {loading ? 'Loading...' : 'Login with Shopify'}

@@ -3,143 +3,281 @@
 import { useEffect, useState } from 'react';
 import useAuthStore from '../../store/authStore';
 
-// Recursive function to flatten menu items with hierarchy indication
-function flattenMenuItems(items, level = 0, parentKey = "") {
-  let flat = [];
-  items.forEach((item, idx) => {
-    const key = parentKey + idx;
-    flat.push({ ...item, level, key });
+// Helper function to extract collections from menu items
+function extractCollections(items, level = 1) {
+  const collections = [];
+  
+  items.forEach(item => {
+    // Check if this is a collection link (has collection URL pattern)
+    if (item.type === 'collection_link' && item.url && item.url.includes('/collections/')) {
+      // Extract handle from URL (e.g., /collections/women -> women)
+      const handle = item.url.split('/collections/')[1];
+      
+      collections.push({
+        id: `gid://shopify/Collection/${handle}`, // Generate a pseudo ID
+        title: item.title,
+        handle: handle,
+        description: '', // No description in menu data
+        image: null, // No image in menu data
+        level: level,
+        products: [], // No products in menu data
+        url: item.url,
+        type: item.type
+      });
+    }
+    
+    // Recursively process children
     if (item.children && item.children.length > 0) {
-      flat = flat.concat(flattenMenuItems(item.children, level + 1, key + "-"));
+      collections.push(...extractCollections(item.children, level + 1));
     }
   });
-  return flat;
+  
+  return collections;
+}
+
+// Helper function to get collections by level
+function getCollectionsByLevel(collections, level) {
+  return collections.filter(collection => collection.level === level);
 }
 
 export default function SettingsPage() {
-  const shop = useAuthStore((state) => state.shop);
+  const { shop, token, getSettings, saveSettings } = useAuthStore();
   const [menu, setMenu] = useState(null);
-  const [flatMenu, setFlatMenu] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
-  // Dropdown state
+  // Settings state
   const [topValue, setTopValue] = useState('');
   const [xAxis, setXAxis] = useState('all');
   const [yAxis, setYAxis] = useState('');
+  const [xAxisCollections, setXAxisCollections] = useState([]);
+  const [yAxisCollections, setYAxisCollections] = useState([]);
 
- useEffect(() => {
-  if (!shop) return;
-  setLoading(true);
+  // UI state for toast visibility
+  const [showToast, setShowToast] = useState(false);
 
-  fetch(`https://${shop}/pages/menu`)
-    .then(res => res.ok ? res.text() : Promise.reject('Failed to fetch menu'))
-    .then(text => {
-      let menuData = [];
-      try {
-        const data = JSON.parse(text);
-        menuData = data.menu || [];
-      } catch (e) {
-        menuData = [];
-      }
-      console.log('Fetched menu:', menuData);
-      setMenu(menuData);
-      setFlatMenu(flattenMenuItems(menuData));
-      setLoading(false);
-    })
-    .catch(err => {
-      setMenu(null);
-      setFlatMenu([]);
-      setLoading(false);
-      console.error(err);
-    });
-}, [shop]);
-
-  // Helper to extract menu layers (level1, level2, level3), excluding Home, Catalog, Contact
-  function getMenuLayers(menu) {
-    if (!Array.isArray(menu)) return { level1: [], level2: [], level3: [] };
-    const exclude = ["Home", "Catalog", "Contact"];
-    const level1 = menu.map(item => item.title).filter(title => title && !exclude.includes(title));
-    const level2 = menu.flatMap(item => (item.children || []).map(sub => sub.title).filter(title => title && !exclude.includes(title)));
-    const level3 = menu.flatMap(item => (item.children || []).flatMap(sub => (sub.children || []).map(subsub => subsub.title).filter(title => title && !exclude.includes(title))));
-    return { level1, level2, level3 };
-  }
-
-  const { level1, level2, level3 } = getMenuLayers(menu || []);
-
- // Only add options if there are items
-const xAxisOptions = [
-  { label: "All Products", value: "all" },
-  ...(level1.length ? [{ label: level1.join(", "), value: "level1" }] : []),
-  ...(level2.length ? [{ label: level2.join(", "), value: "level2" }] : []),
-  ...(level3.length ? [{ label: level3.join(", "), value: "level3" }] : []),
-];
-
-  // Y-Axis options logic
-  let yAxisOptions = [];
-  let yAxisDisabled = true;
-  if (topValue === "product" && xAxis !== "all" && xAxis !== "") {
-    yAxisDisabled = false;
-    if (xAxis === "level1") {
-      if (level2.length > 0) {
-        yAxisOptions = [
-          { label: level2.join(", ") || "-", value: "level2" },
-          { label: level3.join(", ") || "-", value: "level3" },
-        ].filter(opt => opt.label !== "-");
-      } else if (level3.length > 0) {
-        yAxisOptions = [
-          { label: level3.join(", ") || "-", value: "level3" }
-        ].filter(opt => opt.label !== "-");
-      }
-    } else if (xAxis === "level2") {
-      if (level3.length > 0) {
-        yAxisOptions = [
-          { label: level3.join(", ") || "-", value: "level3" }
-        ].filter(opt => opt.label !== "-");
-      }
-    } else if (xAxis === "level3") {
-      yAxisOptions = [
-        { label: "Variants", value: "variants" }
-      ];
+  // Load settings on component mount
+  useEffect(() => {
+    if (shop) {
+      loadSettings();
     }
-    if (yAxisOptions.length === 0) {
-      yAxisOptions = [
-        { label: "No options", value: "none" }
-      ];
-      yAxisDisabled = true;
+  }, [shop]);
+
+  // Load menu data
+  useEffect(() => {
+    if (!shop || !token) return;
+    
+    setLoading(true);
+    fetchMenuData();
+  }, [shop, token]);
+
+  // Show toast when message changes and is not empty
+  useEffect(() => {
+    if (message) {
+      setShowToast(true);
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
     }
-  } else {
-    yAxisOptions = [
-      { label: "None", value: "none" }
-    ];
-    yAxisDisabled = true;
-  }
+  }, [message]);
 
-  // x/y axis dropdowns are disabled unless 'Product' is selected
-  const axisDisabled = topValue !== "product";
+  const loadSettings = async () => {
+    try {
+      const result = await getSettings(shop);
+      if (result.success && result.settings) {
+        const settings = result.settings;
+        setTopValue(settings.topValue || '');
+        setXAxis(settings.xAxis || 'all');
+        setYAxis(settings.yAxis || '');
+        setXAxisCollections(settings.xAxisCollections || []);
+        setYAxisCollections(settings.yAxisCollections || []);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
-  // Axis enable/disable logic
-  const xAxisEnabled = topValue === "product";
-  const yAxisEnabled = topValue === "product" && xAxis !== "all" && xAxis !== "";
+  const fetchMenuData = async () => {
+    try {
+      const response = await fetch('/api/menu', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ shop, token }),
+      });
 
-  // Reset x/y axis if topValue changes away from product
+      if (!response.ok) {
+        throw new Error('Failed to fetch menu data');
+      }
+
+      const data = await response.json();
+      console.log('Raw menu data:', data);
+      
+      if (data.menu) {
+        console.log('Menu items:', data.menu);
+        const extractedCollections = extractCollections(data.menu);
+        setCollections(extractedCollections);
+        console.log('Extracted collections:', extractedCollections);
+      }
+      
+      setMenu(data.menu);
+    } catch (error) {
+      console.error('Error fetching menu:', error);
+      setMessage('Error loading menu data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!shop) {
+      setMessage('No shop available');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
+
+    try {
+      const settingsData = {
+        topValue,
+        xAxis,
+        yAxis,
+        xAxisCollections,
+        yAxisCollections
+      };
+
+      const result = await saveSettings(shop, settingsData);
+      
+      if (result.success) {
+        setMessage('Settings saved successfully!');
+      } else {
+        setMessage('Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setMessage('Error saving settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Get collections by level for dropdowns
+  const layer1Collections = getCollectionsByLevel(collections, 1);
+  const layer2Collections = getCollectionsByLevel(collections, 2);
+  const layer3Collections = getCollectionsByLevel(collections, 3);
+
+  // X-Axis options
+  const xAxisOptions = [
+    { label: "All Products", value: "all" },
+    ...(layer1Collections.length > 0 ? [{ 
+      label: layer1Collections.map(c => c.title).join(', '), 
+      value: "layer1" 
+    }] : []),
+    ...(layer2Collections.length > 0 ? [{ 
+      label: layer2Collections.map(c => c.title).join(', '), 
+      value: "layer2" 
+    }] : []),
+    ...(layer3Collections.length > 0 ? [{ 
+      label: layer3Collections.map(c => c.title).join(', '), 
+      value: "layer3" 
+    }] : [])
+  ];
+
+  // Y-Axis options based on X-Axis selection
+  const getYAxisOptions = () => {
+    if (topValue !== "product" || xAxis === "all" || xAxis === "") {
+      return [{ label: "None", value: "none" }];
+    }
+    const options = [];
+    if (xAxis === "layer1") {
+      if (layer2Collections.length > 0) {
+        options.push({ label: layer2Collections.map(c => c.title).join(', '), value: "layer2" });
+      }
+      if (layer3Collections.length > 0) {
+        options.push({ label: layer3Collections.map(c => c.title).join(', '), value: "layer3" });
+      }
+    } else if (xAxis === "layer2") {
+      if (layer3Collections.length > 0) {
+        options.push({ label: layer3Collections.map(c => c.title).join(', '), value: "layer3" });
+      }
+    } else if (xAxis === "layer3") {
+      // Last layer: no further layers, but keep Y-Axis enabled with a single option
+      options.push({ label: "No options available", value: "none" });
+    }
+    if (options.length === 0) {
+      options.push({ label: "No options available", value: "none" });
+    }
+    return options;
+  };
+
+  const yAxisOptions = getYAxisOptions();
+
+  // Handle X-Axis collection selection
+  const handleXAxisChange = (value) => {
+    setXAxis(value);
+    setYAxis(''); // Always clear Y-Axis selection, do not auto-select any value
+    // Update X-Axis collections based on selection
+    if (value === "layer1") {
+      setXAxisCollections(layer1Collections);
+    } else if (value === "layer2") {
+      setXAxisCollections(layer2Collections);
+    } else if (value === "layer3") {
+      setXAxisCollections(layer3Collections);
+    } else {
+      setXAxisCollections([]);
+    }
+  };
+
+  // Handle Y-Axis collection selection
+  const handleYAxisChange = (value) => {
+    setYAxis(value);
+    
+    // Update Y-Axis collections based on selection
+    if (value === "layer2") {
+      setYAxisCollections(layer2Collections);
+    } else if (value === "layer3") {
+      setYAxisCollections(layer3Collections);
+    } else {
+      setYAxisCollections([]);
+    }
+  };
+
+  // Reset settings when topValue changes
   useEffect(() => {
     if (topValue !== "product") {
       setXAxis("all");
       setYAxis("");
+      setXAxisCollections([]);
+      setYAxisCollections([]);
     }
   }, [topValue]);
-  useEffect(() => {
-    setYAxis("");
-  }, [xAxis]);
 
   return (
-    <div className="w-full p-6 max-w-2xl mx-auto">
+    <div className="w-full p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
-      <div className="mb-6 grid gap-4">
+      
+      {showToast && message && (
+        <div className={`mb-4 p-3 rounded relative flex items-center justify-between ${message.includes('successfully') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}> 
+          <span>{message}</span>
+          <button
+            onClick={() => setShowToast(false)}
+            className="ml-4 text-xl font-bold leading-none focus:outline-none"
+            aria-label="Close"
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      <div className="mb-6 grid gap-6">
         <div>
-          <label className="block mb-1 font-semibold">Product root</label>
+          <label className="block mb-2 font-semibold">Product Root</label>
           <select
-            className="border px-2 py-1 rounded w-full"
+            className="border px-3 py-2 rounded w-full"
             value={topValue}
             onChange={e => setTopValue(e.target.value)}
             disabled={loading}
@@ -151,36 +289,66 @@ const xAxisOptions = [
             <option value="product">Product</option>
           </select>
         </div>
+
+        {/* X-Axis always visible, only enabled if topValue === 'product' */}
         <div>
-          <label className="block mb-1 font-semibold">X-Axis display mode</label>
+          <label className="block mb-2 font-semibold">X-Axis Display Mode</label>
           <select
-            className="border px-2 py-1 rounded w-full"
+            className="border px-3 py-2 rounded w-full"
             value={xAxis}
-            onChange={e => setXAxis(e.target.value)}
-            disabled={!xAxisEnabled || loading}
-            style={{ opacity: (!xAxisEnabled || loading) ? 0.5 : 1 }}
+            onChange={e => handleXAxisChange(e.target.value)}
+            disabled={topValue !== "product" || loading}
+            style={{ opacity: (topValue !== "product" || loading) ? 0.5 : 1 }}
           >
             {xAxisOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
+
+        {/* Y-Axis always visible, only enabled if X-Axis is selected and not 'all' */}
         <div>
-          <label className="block mb-1 font-semibold">Y-Axis display mode</label>
+          <label className="block mb-2 font-semibold">Y-Axis Display Mode</label>
           <select
-            className="border px-2 py-1 rounded w-full"
+            className="border px-3 py-2 rounded w-full"
             value={yAxis}
-            onChange={e => setYAxis(e.target.value)}
-            disabled={!yAxisEnabled || yAxisDisabled || loading}
-            style={{ opacity: (!yAxisEnabled || yAxisDisabled || loading) ? 0.5 : 1 }}
+            onChange={e => handleYAxisChange(e.target.value)}
+            disabled={topValue !== 'product' || xAxis === 'all' || xAxis === '' || loading}
+            style={{ opacity: (topValue !== 'product' || xAxis === 'all' || xAxis === '' || loading) ? 0.5 : 1 }}
           >
+            {yAxis === '' && <option value="" disabled>Select Y-Axis</option>}
             {yAxisOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
+
+       
       </div>
-     
+
+      <div className="flex gap-4">
+        <button
+          onClick={handleSaveSettings}
+          disabled={saving || loading}
+          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Settings'}
+        </button>
+        
+        <button
+          onClick={loadSettings}
+          disabled={loading}
+          className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 disabled:opacity-50"
+        >
+          Reset to Saved
+        </button>
+      </div>
+
+      {loading && (
+        <div className="mt-4 text-center text-gray-600">
+          Loading menu data...
+        </div>
+      )}
     </div>
   );
 }
