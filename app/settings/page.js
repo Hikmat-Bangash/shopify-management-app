@@ -144,9 +144,9 @@ export default function SettingsPage() {
       const settingsData = {
         topValue,
         xAxis,
-        yAxis,
+        yAxis: yAxis || '', // Ensure yAxis is empty string if not set
         xAxisCollections,
-        yAxisCollections
+        yAxisCollections: yAxis ? yAxisCollections : [] // Save empty array if yAxis is empty
       };
 
       const result = await saveSettings(shop, settingsData);
@@ -219,6 +219,8 @@ export default function SettingsPage() {
   const handleXAxisChange = (value) => {
     setXAxis(value);
     setYAxis(''); // Always clear Y-Axis selection, do not auto-select any value
+    setYAxisCollections([]); // Always clear Y-Axis collections
+    
     // Update X-Axis collections based on selection
     if (value === "layer1") {
       setXAxisCollections(layer1Collections);
@@ -226,6 +228,9 @@ export default function SettingsPage() {
       setXAxisCollections(layer2Collections);
     } else if (value === "layer3") {
       setXAxisCollections(layer3Collections);
+      // For layer3 (last layer), ensure Y-Axis is empty
+      setYAxis('');
+      setYAxisCollections([]);
     } else {
       setXAxisCollections([]);
     }
@@ -254,6 +259,14 @@ export default function SettingsPage() {
       setYAxisCollections([]);
     }
   }, [topValue]);
+
+  // Ensure Y-Axis is empty when X-Axis is layer3
+  useEffect(() => {
+    if (xAxis === "layer3") {
+      setYAxis("");
+      setYAxisCollections([]);
+    }
+  }, [xAxis]);
 
   return (
     <div className="w-full p-6 max-w-4xl mx-auto">
