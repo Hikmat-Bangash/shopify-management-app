@@ -70,6 +70,32 @@ const useAuthStore = create(
           console.error('Error saving settings:', error);
           return { success: false, error: error.message };
         }
+      },
+      saveProductStatus: async (shop, productId, isActive) => {
+        try {
+          const response = await fetch('/api/product-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ shop, productId, isActive }),
+          });
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error saving product status:', error);
+          return { success: false, error: error.message };
+        }
+      },
+      getProductStatuses: async (shop) => {
+        try {
+          const response = await fetch(`/api/product-status?shop=${shop}`);
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error getting product statuses:', error);
+          return { success: false, error: error.message };
+        }
       }
     }),
     {

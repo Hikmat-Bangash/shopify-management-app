@@ -128,6 +128,63 @@ POST /api/public/store
 }
 ```
 
+### Product Status API
+
+#### Get Product Statuses
+```http
+GET /api/public/product-status?shop={shop}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "shop": "your-shop.myshopify.com",
+    "statuses": [
+      {
+        "shop": "your-shop.myshopify.com",
+        "productId": "123456789",
+        "isActive": true,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "count": 1
+  },
+  "message": "Product statuses retrieved successfully"
+}
+```
+
+#### Save Product Status
+```http
+POST /api/public/product-status
+```
+
+**Request Body:**
+```json
+{
+  "shop": "your-shop.myshopify.com",
+  "productId": "123456789",
+  "isActive": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "shop": "your-shop.myshopify.com",
+    "productId": "123456789",
+    "isActive": true,
+    "message": "Product status saved successfully",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Product status saved successfully"
+}
+```
+
 ### Error Responses
 
 All endpoints return consistent error responses:
@@ -193,6 +250,21 @@ curl -X POST "https://your-vercel-app.vercel.app/api/public/settings" \
     "topValue": "product",
     "xAxis": "layer1",
     "yAxis": "layer2"
+  }'
+
+# Get product statuses
+curl -X GET "https://your-vercel-app.vercel.app/api/public/product-status?shop=your-shop.myshopify.com" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key"
+
+# Save product status
+curl -X POST "https://your-vercel-app.vercel.app/api/public/product-status" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "shop": "your-shop.myshopify.com",
+    "productId": "123456789",
+    "isActive": true
   }'
 ```
 

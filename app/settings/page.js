@@ -50,7 +50,7 @@ export default function SettingsPage() {
 
   // Settings state
   const [topValue, setTopValue] = useState('');
-  const [xAxis, setXAxis] = useState('all');
+  const [xAxis, setXAxis] = useState('');
   const [yAxis, setYAxis] = useState('');
   const [xAxisCollections, setXAxisCollections] = useState([]);
   const [yAxisCollections, setYAxisCollections] = useState([]);
@@ -88,7 +88,7 @@ export default function SettingsPage() {
       if (result.success && result.settings) {
         const settings = result.settings;
         setTopValue(settings.topValue || '');
-        setXAxis(settings.xAxis || 'all');
+        setXAxis(settings.xAxis || '');
         setYAxis(settings.yAxis || '');
         setXAxisCollections(settings.xAxisCollections || []);
         setYAxisCollections(settings.yAxisCollections || []);
@@ -171,7 +171,6 @@ export default function SettingsPage() {
 
   // X-Axis options
   const xAxisOptions = [
-    { label: "All Products", value: "all" },
     ...(layer1Collections.length > 0 ? [{ 
       label: layer1Collections.map(c => c.title).join(', '), 
       value: "layer1" 
@@ -188,10 +187,11 @@ export default function SettingsPage() {
 
   // Y-Axis options based on X-Axis selection
   const getYAxisOptions = () => {
-    if (topValue !== "product" || xAxis === "all" || xAxis === "") {
-      return [{ label: "None", value: "none" }];
+    if (topValue !== "product" || xAxis === "") {
+      return [];
     }
     const options = [];
+    
     if (xAxis === "layer1") {
       if (layer2Collections.length > 0) {
         options.push({ label: layer2Collections.map(c => c.title).join(', '), value: "layer2" });
@@ -199,17 +199,19 @@ export default function SettingsPage() {
       if (layer3Collections.length > 0) {
         options.push({ label: layer3Collections.map(c => c.title).join(', '), value: "layer3" });
       }
+      // Add variation option at the bottom
+      options.push({ label: "Variation", value: "variation" });
     } else if (xAxis === "layer2") {
       if (layer3Collections.length > 0) {
         options.push({ label: layer3Collections.map(c => c.title).join(', '), value: "layer3" });
       }
+      // Add variation option at the bottom
+      options.push({ label: "Variation", value: "variation" });
     } else if (xAxis === "layer3") {
-      // Last layer: no further layers, but keep Y-Axis enabled with a single option
-      options.push({ label: "No options available", value: "none" });
+      // Last layer: only variation option available
+      options.push({ label: "Variation", value: "variation" });
     }
-    if (options.length === 0) {
-      options.push({ label: "No options available", value: "none" });
-    }
+    
     return options;
   };
 
@@ -228,9 +230,10 @@ export default function SettingsPage() {
       setXAxisCollections(layer2Collections);
     } else if (value === "layer3") {
       setXAxisCollections(layer3Collections);
-      // For layer3 (last layer), ensure Y-Axis is empty
-      setYAxis('');
-      setYAxisCollections([]);
+      // For layer3 (last layer), auto-select variation
+      setTimeout(() => {
+        handleYAxisChange('variation');
+      }, 0);
     } else {
       setXAxisCollections([]);
     }
@@ -241,7 +244,10 @@ export default function SettingsPage() {
     setYAxis(value);
     
     // Update Y-Axis collections based on selection
-    if (value === "layer2") {
+    if (value === "variation") {
+      // For variation, add a string to yAxisCollections
+      setYAxisCollections([{ variation: "variation" }]);
+    } else if (value === "layer2") {
       setYAxisCollections(layer2Collections);
     } else if (value === "layer3") {
       setYAxisCollections(layer3Collections);
@@ -253,20 +259,14 @@ export default function SettingsPage() {
   // Reset settings when topValue changes
   useEffect(() => {
     if (topValue !== "product") {
-      setXAxis("all");
+      setXAxis("");
       setYAxis("");
       setXAxisCollections([]);
       setYAxisCollections([]);
     }
   }, [topValue]);
 
-  // Ensure Y-Axis is empty when X-Axis is layer3
-  useEffect(() => {
-    if (xAxis === "layer3") {
-      setYAxis("");
-      setYAxisCollections([]);
-    }
-  }, [xAxis]);
+
 
   return (
     <div className="w-full p-6 max-w-4xl mx-auto">
@@ -313,21 +313,22 @@ export default function SettingsPage() {
             disabled={topValue !== "product" || loading}
             style={{ opacity: (topValue !== "product" || loading) ? 0.5 : 1 }}
           >
+            {xAxis === '' && <option value="" disabled>Select X-Axis</option>}
             {xAxisOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
 
-        {/* Y-Axis always visible, only enabled if X-Axis is selected and not 'all' */}
+        {/* Y-Axis always visible, only enabled if X-Axis is selected */}
         <div>
           <label className="block mb-2 font-semibold">Y-Axis Display Mode</label>
           <select
             className="border px-3 py-2 rounded w-full"
             value={yAxis}
             onChange={e => handleYAxisChange(e.target.value)}
-            disabled={topValue !== 'product' || xAxis === 'all' || xAxis === '' || loading}
-            style={{ opacity: (topValue !== 'product' || xAxis === 'all' || xAxis === '' || loading) ? 0.5 : 1 }}
+            disabled={topValue !== 'product' || xAxis === '' || loading}
+            style={{ opacity: (topValue !== 'product' || xAxis === '' || loading) ? 0.5 : 1 }}
           >
             {yAxis === '' && <option value="" disabled>Select Y-Axis</option>}
             {yAxisOptions.map(opt => (
@@ -339,22 +340,25 @@ export default function SettingsPage() {
        
       </div>
 
+    
+
       <div className="flex gap-4">
         <button
           onClick={handleSaveSettings}
           disabled={saving || loading}
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+          className="bg-blue-500 text-white cursor-pointer px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
         
-        <button
+        {/* <button
           onClick={loadSettings}
           disabled={loading}
           className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 disabled:opacity-50"
         >
           Reset to Saved
-        </button>
+        </button> */}
+
       </div>
 
       {loading && (
