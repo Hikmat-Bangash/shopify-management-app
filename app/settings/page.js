@@ -48,6 +48,8 @@ export default function SettingsPage() {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [spinningToolLoading, setSpinningToolLoading] = useState(false);
+  const [spinningToolKey, setSpinningToolKey] = useState(0);
   const [message, setMessage] = useState('');
 
   // Settings state
@@ -401,6 +403,10 @@ export default function SettingsPage() {
     setYAxis(''); // Always clear Y-Axis selection, do not auto-select any value
     setYAxisCollections([]); // Always clear Y-Axis collections
     
+    // Show loading and reset spinning tool indices
+    setSpinningToolLoading(true);
+    setSpinningToolKey(prev => prev + 1); // Force re-render of spinning tool
+    
     // Update X-Axis collections based on selection
     if (value === "layer1") {
       setXAxisCollections(layer1Collections);
@@ -415,11 +421,20 @@ export default function SettingsPage() {
     } else {
       setXAxisCollections([]);
     }
+    
+    // Hide loading after 2 seconds
+    setTimeout(() => {
+      setSpinningToolLoading(false);
+    }, 2000);
   };
 
   // Handle Y-Axis collection selection
   const handleYAxisChange = (value) => {
     setYAxis(value);
+    
+    // Show loading and reset spinning tool indices
+    setSpinningToolLoading(true);
+    setSpinningToolKey(prev => prev + 1); // Force re-render of spinning tool
     
     // Update Y-Axis collections based on selection
     if (value === "variation") {
@@ -432,6 +447,11 @@ export default function SettingsPage() {
     } else {
       setYAxisCollections([]);
     }
+    
+    // Hide loading after 2 seconds
+    setTimeout(() => {
+      setSpinningToolLoading(false);
+    }, 2000);
   };
 
   // Reset settings when topValue changes
@@ -548,36 +568,45 @@ export default function SettingsPage() {
         </h2>
         {matchedXCollections.length > 0 ? (
           <div className="w-full h-[600px] bg-transparent rounded-lg overflow-hidden">
-            {(() => {
-              const productsForTool = yAxis === 'variation' ? getAllProductsFromCollections(matchedXCollections) : [];
-              const collectionsForTool = yAxis === 'variation' ? [] : matchedXCollections;
-              
-              console.log('SpinningTool Data:', {
-                yAxis,
-                productsCount: productsForTool.length,
-                collectionsCount: collectionsForTool.length,
-                yAxisDisplayMode: yAxis === 'variation' ? 'variants' : 'categoryProducts',
-                sampleProduct: productsForTool[0],
-                sampleCollection: collectionsForTool[0]
-              });
-              
-              // Debug product image structure
-              if (productsForTool.length > 0) {
-                console.log('Sample Product Image Structure:', {
-                  featuredImage: productsForTool[0]?.featuredImage,
-                  variants: productsForTool[0]?.variants?.slice(0, 2),
-                  title: productsForTool[0]?.title
+            {spinningToolLoading ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center text-gray-600">
+                  Preparing spinning tool...
+                </div>
+              </div>
+            ) : (
+              (() => {
+                const productsForTool = yAxis === 'variation' ? getAllProductsFromCollections(matchedXCollections) : [];
+                const collectionsForTool = yAxis === 'variation' ? [] : matchedXCollections;
+                
+                console.log('SpinningTool Data:', {
+                  yAxis,
+                  productsCount: productsForTool.length,
+                  collectionsCount: collectionsForTool.length,
+                  yAxisDisplayMode: yAxis === 'variation' ? 'variants' : 'categoryProducts',
+                  sampleProduct: productsForTool[0],
+                  sampleCollection: collectionsForTool[0]
                 });
-              }
-              
-              return (
-                <SpinningTool
-                  productsList={productsForTool}
-                  collectionsData={collectionsForTool}
-                  yAxisDisplayMode={yAxis === 'variation' ? 'variants' : 'categoryProducts'}
-                />
-              );
-            })()}
+                
+                // Debug product image structure
+                if (productsForTool.length > 0) {
+                  console.log('Sample Product Image Structure:', {
+                    featuredImage: productsForTool[0]?.featuredImage,
+                    variants: productsForTool[0]?.variants?.slice(0, 2),
+                    title: productsForTool[0]?.title
+                  });
+                }
+                
+                return (
+                  <SpinningTool
+                    key={spinningToolKey}
+                    productsList={productsForTool}
+                    collectionsData={collectionsForTool}
+                    yAxisDisplayMode={yAxis === 'variation' ? 'variants' : 'categoryProducts'}
+                  />
+                );
+              })()
+            )}
           </div>
         ) : (
           loading && (
