@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import useAuthStore from '../../store/authStore';
+// import SpinningTool from '../components/SpinningTool';
+import SpinningTool from '../components/SpinningTool2';
 
 // Helper function to extract collections from menu items
 function extractCollections(items, level = 1) {
@@ -55,34 +57,104 @@ export default function SettingsPage() {
   const [xAxisCollections, setXAxisCollections] = useState([]);
   const [yAxisCollections, setYAxisCollections] = useState([]);
 
+  // Shopify collections state
+  const [shopifyCollections, setShopifyCollections] = useState([]);
+  const [matchedXCollections, setMatchedXCollections] = useState([]);
+  const [matchedYCollections, setMatchedYCollections] = useState([]);
+
   // UI state for toast visibility
   const [showToast, setShowToast] = useState(false);
 
-  // Load settings on component mount
-  useEffect(() => {
-    if (shop) {
-      loadSettings();
+  // Sample data for testing the spinning tool
+  const sampleProducts = [
+    {
+      id: '1',
+      title: 'Gold Watch',
+      description: 'Luxury gold wristwatch with diamond bezel',
+      featuredImage: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
+      variants: [
+        { id: 'v1', image: { url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop' } },
+        { id: 'v2', image: { url: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop' } },
+        { id: 'v3', image: { url: 'https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?w=400&h=400&fit=crop' } }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Silver Watch',
+      description: 'Elegant silver wristwatch with leather strap',
+      featuredImage: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop',
+      variants: [
+        { id: 'v4', image: { url: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop' } },
+        { id: 'v5', image: { url: 'https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?w=400&h=400&fit=crop' } }
+      ]
+    },
+    {
+      id: '3',
+      title: 'Rose Gold Watch',
+      description: 'Beautiful rose gold watch with mother of pearl dial',
+      featuredImage: 'https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?w=400&h=400&fit=crop',
+      variants: [
+        { id: 'v6', image: { url: 'https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?w=400&h=400&fit=crop' } },
+        { id: 'v7', image: { url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop' } },
+        { id: 'v8', image: { url: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop' } }
+      ]
     }
-  }, [shop]);
+  ];
 
-  // Load menu data
-  useEffect(() => {
-    if (!shop || !token) return;
-    
-    setLoading(true);
-    fetchMenuData();
+  const sampleCollections = [
+    {
+      id: 'c1',
+      title: 'Luxury Collection',
+      description: 'Premium luxury watches',
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
+      products: sampleProducts
+    },
+    {
+      id: 'c2',
+      title: 'Classic Collection',
+      description: 'Timeless classic designs',
+      image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop',
+      products: sampleProducts.slice(0, 2)
+    }
+  ];
+
+  // Function to fetch all collections from Shopify
+  const fetchAllCollections = useCallback(async () => {
+    try {
+      console.log('Fetching all collections for shop:', shop);
+      
+      const response = await fetch('/api/collections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          shop, 
+          token
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch collections');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Collections fetched successfully:', data.collections);
+        return data.collections;
+      } else {
+        console.error('Error fetching collections:', data.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+      return null;
+    }
   }, [shop, token]);
 
-  // Show toast when message changes and is not empty
-  useEffect(() => {
-    if (message) {
-      setShowToast(true);
-      const timer = setTimeout(() => setShowToast(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
-  const loadSettings = async () => {
+  // Define functions before using them in useEffect
+  const loadSettings = useCallback(async () => {
     try {
       const result = await getSettings(shop);
       if (result.success && result.settings) {
@@ -96,9 +168,26 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error loading settings:', error);
     }
-  };
+  }, [shop, getSettings]);
 
-  const fetchMenuData = async () => {
+  // Function to load settings and match collections
+  const loadSettingsAndMatchCollections = useCallback(async () => {
+    try {
+      // Load settings first
+      await loadSettings();
+      
+      // Fetch all collections from Shopify
+      const collections = await fetchAllCollections();
+      if (collections) {
+        setShopifyCollections(collections);
+        console.log('Shopify collections loaded:', collections.length);
+      }
+    } catch (error) {
+      console.error('Error loading settings and collections:', error);
+    }
+  }, [loadSettings, fetchAllCollections]);
+
+  const fetchMenuData = useCallback(async () => {
     try {
       const response = await fetch('/api/menu', {
         method: 'POST',
@@ -129,7 +218,53 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [shop, token]);
+
+  // Load settings and collections on component mount
+  useEffect(() => {
+    if (shop && token) {
+      loadSettingsAndMatchCollections();
+    }
+  }, [shop, token, loadSettingsAndMatchCollections]);
+
+  // Match collections whenever settings or Shopify collections change
+  useEffect(() => {
+    if (shopifyCollections.length > 0 && (xAxisCollections.length > 0 || yAxisCollections.length > 0)) {
+      console.log('Matching collections...');
+      
+      // Match X-axis collections
+      const matchedX = matchCollections(shopifyCollections, xAxisCollections);
+      setMatchedXCollections(matchedX);
+      
+      // Match Y-axis collections (only if not variations)
+      if (yAxisCollections.length > 0 && !yAxisCollections[0]?.variation) {
+        // const matchedY = matchCollections(shopifyCollections, yAxisCollections);
+        // setMatchedYCollections(matchedY);
+      } else {
+        setMatchedYCollections([]);
+      }
+      
+      // console.log('Matched X collections:', matchedX.length);
+      // console.log('Matched Y collections:', yAxisCollections[0]?.variation ? 'variations' : matchedY.length);
+    }
+  }, [shopifyCollections, xAxisCollections, yAxisCollections]);
+
+  // Load menu data
+  useEffect(() => {
+    if (!shop || !token) return;
+    
+    setLoading(true);
+    fetchMenuData();
+  }, [shop, token, fetchMenuData]);
+
+  // Show toast when message changes and is not empty
+  useEffect(() => {
+    if (message) {
+      setShowToast(true);
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   const handleSaveSettings = async () => {
     if (!shop) {
@@ -149,16 +284,21 @@ export default function SettingsPage() {
         yAxisCollections: yAxis ? yAxisCollections : [] // Save empty array if yAxis is empty
       };
 
+      console.log('Saving settings with data:', settingsData);
+      console.log('Shop:', shop);
+
       const result = await saveSettings(shop, settingsData);
+      
+      console.log('Save result:', result);
       
       if (result.success) {
         setMessage('Settings saved successfully!');
       } else {
-        setMessage('Failed to save settings');
+        setMessage('Failed to save settings: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      setMessage('Error saving settings');
+      setMessage('Error saving settings: ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -216,6 +356,44 @@ export default function SettingsPage() {
   };
 
   const yAxisOptions = getYAxisOptions();
+
+  // Function to match Shopify collections with DB collections by title
+  const matchCollections = (shopifyCollections, dbCollections) => {
+    if (!shopifyCollections || !dbCollections) return [];
+    
+    const matchedCollections = [];
+    
+    dbCollections.forEach(dbCollection => {
+      const matchedCollection = shopifyCollections.find(shopifyCollection => 
+        shopifyCollection.title.toLowerCase() === dbCollection.title.toLowerCase()
+      );
+      
+      if (matchedCollection) {
+        matchedCollections.push({
+          ...matchedCollection,
+          dbData: dbCollection // Keep original DB data for reference
+        });
+      }
+    });
+    
+    console.log(`Matched ${matchedCollections.length} collections out of ${dbCollections.length} DB collections`);
+    return matchedCollections;
+  };
+
+  // Function to extract all products from collections for Scenario 1
+  const getAllProductsFromCollections = (collections) => {
+    if (!collections || collections.length === 0) return [];
+    
+    const allProducts = [];
+    collections.forEach(collection => {
+      if (collection.products && collection.products.length > 0) {
+        allProducts.push(...collection.products);
+      }
+    });
+    
+    console.log(`Extracted ${allProducts.length} products from ${collections.length} collections`);
+    return allProducts;
+  };
 
   // Handle X-Axis collection selection
   const handleXAxisChange = (value) => {
@@ -361,11 +539,54 @@ export default function SettingsPage() {
 
       </div>
 
-      {loading && (
-        <div className="mt-4 text-center text-gray-600">
-          Loading menu data...
-        </div>
-      )}
+     
+
+      {/* Spinning Tool Demo */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">
+          {matchedXCollections.length > 0 ? "Spinning Tool Preview" : "Spinning Tool Demo"}
+        </h2>
+        {matchedXCollections.length > 0 ? (
+          <div className="w-full h-[600px] bg-transparent rounded-lg overflow-hidden">
+            {(() => {
+              const productsForTool = yAxis === 'variation' ? getAllProductsFromCollections(matchedXCollections) : [];
+              const collectionsForTool = yAxis === 'variation' ? [] : matchedXCollections;
+              
+              console.log('SpinningTool Data:', {
+                yAxis,
+                productsCount: productsForTool.length,
+                collectionsCount: collectionsForTool.length,
+                yAxisDisplayMode: yAxis === 'variation' ? 'variants' : 'categoryProducts',
+                sampleProduct: productsForTool[0],
+                sampleCollection: collectionsForTool[0]
+              });
+              
+              // Debug product image structure
+              if (productsForTool.length > 0) {
+                console.log('Sample Product Image Structure:', {
+                  featuredImage: productsForTool[0]?.featuredImage,
+                  variants: productsForTool[0]?.variants?.slice(0, 2),
+                  title: productsForTool[0]?.title
+                });
+              }
+              
+              return (
+                <SpinningTool
+                  productsList={productsForTool}
+                  collectionsData={collectionsForTool}
+                  yAxisDisplayMode={yAxis === 'variation' ? 'variants' : 'categoryProducts'}
+                />
+              );
+            })()}
+          </div>
+        ) : (
+          loading && (
+            <div className="mt-4 text-center text-gray-600">
+              Preparing spinning tool...
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

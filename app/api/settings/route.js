@@ -38,9 +38,13 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { shop, topValue, xAxis, yAxis, xAxisCollections, yAxisCollections } = await req.json();
+    const body = await req.json();
+    console.log('Settings API received:', body);
+    
+    const { shop, topValue, xAxis, yAxis, xAxisCollections, yAxisCollections } = body;
     
     if (!shop) {
+      console.log('No shop provided');
       return NextResponse.json({ error: 'Shop is required' }, { status: 400 });
     }
 
@@ -52,11 +56,14 @@ export async function POST(req) {
       yAxisCollections: yAxisCollections || []
     };
 
+    console.log('Settings data to save:', settingsData);
+
     const result = await saveSettings(shop, settingsData);
     
+    console.log('Save settings result:', result);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error saving settings:', error);
-    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save settings: ' + error.message }, { status: 500 });
   }
 } 
