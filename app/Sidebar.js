@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaHome, FaBoxOpen, FaCog, FaSignOutAlt, FaTimes } from 'react-icons/fa';
+import { FaHome, FaBoxOpen, FaCog, FaSignOutAlt, FaTimes, FaChartBar } from 'react-icons/fa';
 import useAuthStore from '../store/authStore';
 
 export default function Sidebar({ open, setOpen }) {
@@ -23,6 +23,7 @@ export default function Sidebar({ open, setOpen }) {
   const navItems = [
     { name: 'Home', href: '/', icon: <FaHome /> },
     { name: 'Products', href: '/products', icon: <FaBoxOpen /> },
+    { name: 'Analytics', href: '/analytics', icon: <FaChartBar /> },
     { name: 'Settings', href: '/settings', icon: <FaCog /> },
   ];
 
