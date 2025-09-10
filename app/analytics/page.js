@@ -118,12 +118,12 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={fetchAnalyticsData}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
             >
               <FaSync />
               Refresh
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer">
               <FaDownload />
               Export
             </button>
@@ -439,7 +439,7 @@ export default function AnalyticsPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
                       onClick={() => handleProductClick(product.productId)}
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                      className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
                     >
                       View Details
                     </button>
@@ -459,7 +459,7 @@ export default function AnalyticsPage() {
               <h3 className="text-xl font-semibold text-gray-900">Product Analytics Details</h3>
               <button
                 onClick={() => setShowProductModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer"
               >
                 ×
               </button>

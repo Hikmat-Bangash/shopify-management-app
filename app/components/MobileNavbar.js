@@ -8,7 +8,7 @@ export default function MobileNavbar({ onMenuClick }) {
       <button
         onClick={onMenuClick}
         aria-label="Open menu"
-        className="text-blue-600 p-2 rounded-full focus:outline-none"
+        className="text-blue-600 p-2 rounded-full focus:outline-none cursor-pointer"
       >
         <FaBars size={24} />
       </button>

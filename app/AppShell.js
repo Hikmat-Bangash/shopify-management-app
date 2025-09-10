@@ -10,9 +10,9 @@ export default function AppShell({ children }) {
   return (
     <>
       <MobileNavbar onMenuClick={() => setSidebarOpen(true)} />
-      <div className="flex min-h-screen">
+      <div className="flex h-screen">
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-        <main className="flex-1 min-w-0 w-full ">
+        <main className="flex-1 min-w-0 w-full h-full overflow-auto">
           {children}
         </main>
       </div>

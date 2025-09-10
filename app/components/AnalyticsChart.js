@@ -65,7 +65,7 @@ const AnalyticsChart = ({ data, type = 'bar', title, className = '' }) => {
   const drawDoughnutChart = (ctx, data, width, height) => {
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) / 2 - 20;
+    const radius = Math.min(width, height) / 2 - 40; // Increased margin for labels
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
     let currentAngle = 0;
@@ -82,15 +82,21 @@ const AnalyticsChart = ({ data, type = 'bar', title, className = '' }) => {
       ctx.fillStyle = colors[index % colors.length];
       ctx.fill();
 
-      // Draw label
+      // Draw label with improved positioning
       const labelAngle = currentAngle + sliceAngle / 2;
-      const labelX = centerX + Math.cos(labelAngle) * (radius + 20);
-      const labelY = centerY + Math.sin(labelAngle) * (radius + 20);
+      const labelDistance = radius + 30; // Increased distance from center
+      const labelX = centerX + Math.cos(labelAngle) * labelDistance;
+      const labelY = centerY + Math.sin(labelAngle) * labelDistance;
+      
+      // Ensure labels stay within canvas bounds
+      const padding = 10;
+      const adjustedX = Math.max(padding, Math.min(width - padding, labelX));
+      const adjustedY = Math.max(padding + 12, Math.min(height - padding, labelY));
       
       ctx.fillStyle = '#374151';
       ctx.font = '12px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(item.label, labelX, labelY);
+      ctx.fillText(item.label, adjustedX, adjustedY);
 
       currentAngle += sliceAngle;
     });

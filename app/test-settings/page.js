@@ -85,7 +85,7 @@ export default function TestSettingsPage() {
             <button
               onClick={testGetSettings}
               disabled={loading}
-              className="bg-blue-500 text-white px-4 py-2 rounded mr-4 disabled:opacity-50"
+              className="bg-blue-500 text-white px-4 py-2 rounded mr-4 disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Testing...' : 'Get Settings'}
             </button>
@@ -93,7 +93,7 @@ export default function TestSettingsPage() {
             <button
               onClick={testSaveSettings}
               disabled={loading}
-              className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+              className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Testing...' : 'Save Test Settings'}
             </button>

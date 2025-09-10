@@ -61,7 +61,7 @@ export default function TestDBPage() {
             <button
               onClick={testCheckStore}
               disabled={loading}
-              className="bg-blue-500 text-white px-4 py-2 rounded mr-4 disabled:opacity-50"
+              className="bg-blue-500 text-white px-4 py-2 rounded mr-4 disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Testing...' : 'Check Store Status'}
             </button>
@@ -69,7 +69,7 @@ export default function TestDBPage() {
             <button
               onClick={testSaveStore}
               disabled={loading}
-              className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+              className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Testing...' : 'Save Store to DB'}
             </button>
